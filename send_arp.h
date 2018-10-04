@@ -16,7 +16,7 @@ typedef struct arp_packet {
     __uint8_t t_p_addr[4];    //target protocol address.
 } ARP_pkt;
 
-static const int ARP_size = sizeof(ARP_pkt);
+#define ARP_size sizeof(ARP_pkt)
 
 void str_ip(const char * ipstr, __uint8_t * ipbuf);
 
@@ -36,3 +36,6 @@ void ARP_atk_init(ARP_pkt * arp_attack,
                   __uint8_t * my_mac,
                   __uint8_t * target_ip,
                   __uint8_t * sender_ip);
+
+void dump(const u_char * pkt);
+

@@ -176,4 +176,10 @@ void ARP_atk_init(ARP_pkt * arp_attack,
     memcpy(arp_attack->t_p_addr, sender_ip, sizeof(arp_attack->t_p_addr));
 }
 
+void dump(const u_char * pkt) {
+    for(int i=0; i<ARP_size; i++) {
+        if (i % 16 == 0) printf("\n");
+        printf("%02X ", pkt[i]);
+    }
+}
 
