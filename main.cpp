@@ -32,10 +32,11 @@ int main(int argc, char ** argv) {
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t * handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
 
+
     ARP_pkt * arp_request = (ARP_pkt *)malloc(ARP_size);
     memset(arp_request, 0, ARP_size);
     u_char * arp_buf = (u_char *)malloc(ARP_size);
-    memset(arp_buf, 0, ARP_size+1);
+    memset(arp_buf, 0, ARP_size);
 
     __uint8_t sender_ip[4];             // victim
     __uint8_t sender_mac[6];
@@ -51,20 +52,20 @@ int main(int argc, char ** argv) {
     get_mac(my_mac);
     printf("my_ip : ");
     get_ip(my_ip);
+    printf("\n");
     // 1 complete!
 
     ARP_req_init(arp_request, my_mac, my_ip, sender_ip);
     memcpy(arp_buf, (const u_char *)arp_request, ARP_size);
-    printf("[ ARP Request Packet ]\n");
+    printf("[ ARP Request Packet ]");
     dump((const u_char *)arp_buf);
+    printf("\n");
+    
 
-
-    printf("ahaha!\n");
     if (-1 == pcap_sendpacket(handle, (const u_char *)arp_buf, ARP_size)){
         perror("pcap_sendpacket : ");
         exit(0);
     }
-    printf("ahaha!\n");
     free(arp_request);
     // 2 complete!
 
@@ -88,7 +89,7 @@ int main(int argc, char ** argv) {
             break; 
         }
         const __uint8_t * p = packet;
-        printf("[ ARP Reply Packet ]\n");
+        printf("[ ARP Reply Packet ]");
         dump(packet);
         memcpy(arp_reply, p, ARP_size);
         printf("ahaha!\n");

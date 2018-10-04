@@ -1,3 +1,5 @@
+#pragma pack(push,1)
+
 typedef struct arp_packet {
     // Ethernet
     __uint8_t dst[6];    //mac destination.
@@ -15,6 +17,8 @@ typedef struct arp_packet {
     __uint8_t t_hw_addr[6];    //target hardware address.
     __uint8_t t_p_addr[4];    //target protocol address.
 } ARP_pkt;
+
+#pragma pack(pop)
 
 #define ARP_size sizeof(ARP_pkt)
 
