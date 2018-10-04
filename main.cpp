@@ -88,14 +88,15 @@ int main(int argc, char ** argv) {
             free(arp_reply); 
             break; 
         }
-        const __uint8_t * p = packet;
-        printf("[ ARP Reply Packet ]");
-        dump(packet);
-        memcpy(arp_reply, p, ARP_size);
+
         printf("ahaha!\n");
         // this packet is not ARP packet
         if (arp_reply->type != ETHERTYPE_ARP) { continue; }
         
+        printf("[ ARP Reply Packet ]");
+        dump(packet);
+        memcpy(arp_reply, packet, ARP_size);
+
         for(int i=0; i<6; i++) {
             sender_mac[i] = arp_reply->s_hw_addr[i];
             printf("%02X ", sender_mac[i]);
