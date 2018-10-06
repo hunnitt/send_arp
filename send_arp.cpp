@@ -26,7 +26,7 @@ void str_ip(const char * ipstr, __uint8_t * ipbuf) {
     }
 }
 
-int get_mac(__uint8_t * my_mac) {
+int get_mac(__uint8_t * my_mac, const char * interface) {
 	int sock_fd;
 	struct ifreq ifr;
     char buf[20];
@@ -39,7 +39,7 @@ int get_mac(__uint8_t * my_mac) {
 		return -1;
 	}
 
-    strcpy(ifr.ifr_name, "ens33");
+    strcpy(ifr.ifr_name, interface);
 
 	if (ioctl(sock_fd, SIOCGIFHWADDR, &ifr) < 0) {
 		perror("ioctl error : ");
@@ -71,7 +71,7 @@ int get_mac(__uint8_t * my_mac) {
     return 0;
 }
 
-int get_ip(__uint8_t * my_ip) {
+int get_ip(__uint8_t * my_ip, const char * interface) {
     int sock_fd;
 	struct ifreq ifr;
 	struct sockaddr_in * sin;
@@ -83,7 +83,7 @@ int get_ip(__uint8_t * my_ip) {
 		return -1;
 	}
 
-	strcpy(ifr.ifr_name, "ens33");
+	strcpy(ifr.ifr_name, interface);
 
 	if (ioctl(sock_fd, SIOCGIFADDR, &ifr)< 0) {
 		perror("ioctl error : ");
@@ -109,71 +109,45 @@ int get_ip(__uint8_t * my_ip) {
 	return 0;
 }
 
-void ARP_req_init(ARP_pkt * arp_request,
+void ARP_req_init(ARP_pkt arp_request,
                   __uint8_t * my_mac,
                   __uint8_t * my_ip,
                   __uint8_t * sender_ip){
     // Ethernet
-    memset(arp_request->dst, 0xff, sizeof(arp_request->dst));
-    memcpy(arp_request->src, my_mac, sizeof(arp_request->src));
-    arp_request->type = htons(0x0806);
+    memset(arp_request.eh.dst, 0xff, sizeof(arp_request.eh.dst));
+    memcpy(arp_request.eh.src, my_mac, sizeof(arp_request.eh.src));
+    arp_request.eh.type = htons(0x0806);
     // ARP
-    arp_request->hw_type = htons(0x0001);
-    arp_request->p_type = htons(0x0800);
-    arp_request->hw_len = 0x06;
-    arp_request->p_len = 0x04;
-    arp_request->op = htons(0x0001);
-    memcpy(arp_request->s_hw_addr, my_mac, sizeof(arp_request->s_hw_addr));
-    memcpy(arp_request->s_p_addr, my_ip, sizeof(arp_request->s_p_addr));
-    memset(arp_request->t_hw_addr, 0x00, sizeof(arp_request->t_hw_addr));
-    memcpy(arp_request->t_p_addr, sender_ip, sizeof(arp_request->t_p_addr));
+    arp_request.ah.hw_type = htons(0x0001);
+    arp_request.ah.p_type = htons(0x0800);
+    arp_request.ah.hw_len = 0x06;
+    arp_request.ah.p_len = 0x04;
+    arp_request.ah.op = htons(0x0001);
+    memcpy(arp_request.ah.s_hw_addr, my_mac, sizeof(arp_request.ah.s_hw_addr));
+    memcpy(arp_request.ah.s_p_addr, my_ip, sizeof(arp_request.ah.s_p_addr));
+    memset(arp_request.ah.t_hw_addr, 0x00, sizeof(arp_request.ah.t_hw_addr));
+    memcpy(arp_request.ah.t_p_addr, sender_ip, sizeof(arp_request.ah.t_p_addr));
 }
 
-void ARP_pkt_dump(ARP_pkt * arppkt) {
-    printf("[ ETHERNET ]\n");
-
-    for(int i=0; i<6; i++)
-        printf("%02X ", arppkt->dst[i]);
-    printf("\n");
-
-    for(int i=0; i<6; i++)
-        printf("%02X ", arppkt->src[i]);
-    printf("\n");
-
-    printf("0x%04X", htons(arppkt->type));
-    printf("\n\n");
-
-    printf("[ ARP ]\n");
-
-    printf("%04X\n%04X\n%02X\n%02X\n%04X\n",
-           htons(arppkt->hw_type),
-           htons(arppkt->p_type),
-           htons(arppkt->hw_len),
-           htons(arppkt->p_len),
-           htons(arppkt->op));
-
-
-}
-
-void ARP_atk_init(ARP_pkt * arp_attack,
+void ARP_atk_init(ARP_pkt arp_attack,
                   __uint8_t * sender_mac,
                   __uint8_t * my_mac,
                   __uint8_t * target_ip,
                   __uint8_t * sender_ip){
     // Ethernet
-    memcpy(arp_attack->dst, sender_mac, sizeof(arp_attack->dst));
-    memcpy(arp_attack->src, my_mac, sizeof(arp_attack->src));
-    arp_attack->type = htons(0x0806);
+    memcpy(arp_attack.eh.dst, sender_mac, sizeof(arp_attack.eh.dst));
+    memcpy(arp_attack.eh.src, my_mac, sizeof(arp_attack.eh.src));
+    arp_attack.eh.type = htons(0x0806);
     // ARP
-    arp_attack->hw_type = htons(0x0001);
-    arp_attack->p_type = htons(0x0800);
-    arp_attack->hw_len = 0x06;
-    arp_attack->p_len = 0x04;
-    arp_attack->op = htons(0x0002);
-    memcpy(arp_attack->s_hw_addr, my_mac, sizeof(arp_attack->s_hw_addr));
-    memcpy(arp_attack->s_p_addr, target_ip, sizeof(arp_attack->s_p_addr));
-    memcpy(arp_attack->t_hw_addr, sender_mac, sizeof(arp_attack->t_hw_addr));
-    memcpy(arp_attack->t_p_addr, sender_ip, sizeof(arp_attack->t_p_addr));
+    arp_attack.ah.hw_type = htons(0x0001);
+    arp_attack.ah.p_type = htons(0x0800);
+    arp_attack.ah.hw_len = 0x06;
+    arp_attack.ah.p_len = 0x04;
+    arp_attack.ah.op = htons(0x0002);
+    memcpy(arp_attack.ah.s_hw_addr, my_mac, sizeof(arp_attack.ah.s_hw_addr));
+    memcpy(arp_attack.ah.s_p_addr, target_ip, sizeof(arp_attack.ah.s_p_addr));
+    memcpy(arp_attack.ah.t_hw_addr, sender_mac, sizeof(arp_attack.ah.t_hw_addr));
+    memcpy(arp_attack.ah.t_p_addr, sender_ip, sizeof(arp_attack.ah.t_p_addr));
 }
 
 void dump(const u_char * pkt) {

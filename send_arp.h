@@ -1,11 +1,13 @@
 #pragma pack(push,1)
 
-typedef struct arp_packet {
+typedef struct ethernet_header {
     // Ethernet
     __uint8_t dst[6];    //mac destination.
     __uint8_t src[6];    //mac source.
     __uint16_t type;    //protocol type.
+} eth_hdr;
 
+typedef struct arp_header {
     // ARP
     __uint16_t hw_type;    //hardware type.
     __uint16_t p_type;    //protocol type.
@@ -16,6 +18,11 @@ typedef struct arp_packet {
     __uint8_t s_p_addr[4];    //sender protocol address.
     __uint8_t t_hw_addr[6];    //target hardware address.
     __uint8_t t_p_addr[4];    //target protocol address.
+} arp_hdr;
+
+typedef struct arp_packet {
+    eth_hdr eh;
+    arp_hdr ah;
 } ARP_pkt;
 
 #pragma pack(pop)
@@ -24,18 +31,16 @@ typedef struct arp_packet {
 
 void str_ip(const char * ipstr, __uint8_t * ipbuf);
 
-int get_mac(__uint8_t * buf);
+int get_mac(__uint8_t * buf, const char * interface);
 
-int get_ip(__uint8_t * buf);
+int get_ip(__uint8_t * buf, const char * interface);
 
-void ARP_req_init(ARP_pkt * arp_request,
+void ARP_req_init(ARP_pkt arp_request,
                   __uint8_t * my_mac,
                   __uint8_t * my_ip,
                   __uint8_t * target_ip);
 
-void ARP_pkt_dump(ARP_pkt * arppkt);
-
-void ARP_atk_init(ARP_pkt * arp_attack,
+void ARP_atk_init(ARP_pkt arp_attack,
                   __uint8_t * sender_mac,
                   __uint8_t * my_mac,
                   __uint8_t * target_ip,
